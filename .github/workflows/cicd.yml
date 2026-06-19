@@ -1,4 +1,4 @@
-name: CI/CD — Build & Deploy to CCE
+name: CI/CD - Build and Deploy to CCE
 
 on:
   push:
@@ -26,7 +26,7 @@ jobs:
             -u "${{ secrets.SWR_USERNAME }}" \
             -p "${{ secrets.SWR_PASSWORD }}"
 
-      - name: Build & push image
+      - name: Build and push image
         run: |
           IMAGE=${{ env.SWR_REGISTRY }}/${{ env.SWR_NAMESPACE }}/${{ env.IMAGE_NAME }}
           TAG=${GITHUB_SHA::8}
@@ -38,6 +38,12 @@ jobs:
           docker push ${IMAGE}:${TAG}
           docker push ${IMAGE}:latest
           echo "IMAGE_FULL=${IMAGE}:${TAG}" >> $GITHUB_ENV
+
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/v1.29.0/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
 
       - name: Deploy to CCE
         run: |
