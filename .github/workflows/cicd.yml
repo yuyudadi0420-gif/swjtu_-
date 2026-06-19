@@ -1,0 +1,50 @@
+name: CI/CD — Build & Deploy to CCE
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/cicd.yml'
+
+env:
+  SWR_REGISTRY: swr.cn-north-4.myhuaweicloud.com
+  SWR_NAMESPACE: hymhh123
+  IMAGE_NAME: backend
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to SWR
+        run: |
+          docker login ${{ env.SWR_REGISTRY }} \
+            -u "${{ secrets.SWR_USERNAME }}" \
+            -p "${{ secrets.SWR_PASSWORD }}"
+
+      - name: Build & push image
+        run: |
+          IMAGE=${{ env.SWR_REGISTRY }}/${{ env.SWR_NAMESPACE }}/${{ env.IMAGE_NAME }}
+          TAG=${GITHUB_SHA::8}
+          docker build \
+            --provenance=false --sbom=false \
+            -t ${IMAGE}:${TAG} \
+            -t ${IMAGE}:latest \
+            ./backend
+          docker push ${IMAGE}:${TAG}
+          docker push ${IMAGE}:latest
+          echo "IMAGE_FULL=${IMAGE}:${TAG}" >> $GITHUB_ENV
+
+      - name: Deploy to CCE
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+          kubectl set image deployment/backend \
+            backend=${{ env.IMAGE_FULL }} \
+            -n default
+          kubectl rollout status deployment/backend -n default --timeout=120s
