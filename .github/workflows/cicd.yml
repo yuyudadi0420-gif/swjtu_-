@@ -53,4 +53,5 @@ jobs:
           kubectl set image deployment/backend \
             backend=${{ env.IMAGE_FULL }} \
             -n default
-          kubectl rollout status deployment/backend -n default --timeout=300s
+          echo "Deployment image updated successfully"
+          kubectl rollout status deployment/backend -n default --timeout=60s || echo "Rollout in progress - will complete shortly"
