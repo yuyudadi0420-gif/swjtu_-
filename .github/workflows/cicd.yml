@@ -50,7 +50,6 @@ jobs:
           mkdir -p ~/.kube
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
           chmod 600 ~/.kube/config
-          kubectl config use-context externalCluster
           kubectl set image deployment/backend \
             backend=${{ env.IMAGE_FULL }} \
             -n default
